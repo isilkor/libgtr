@@ -58,6 +58,9 @@
 	((ULONG_MAX / fac2 < fac1 ? \
 	false : (*(prod) = fac1 * fac2)) || true)
 
+/* Plural evaluation */
+#include "plurals.inl"
+
 /* Internal domain handling functions */
 /* Create and initialize a new, empty domain. */
 static libgtr_domain_t *_domain_new(const char *name)
@@ -82,6 +85,8 @@ static void _domain_free(libgtr_domain_t *domain)
 	if (!domain)
 		return;
 
+	libgtr_plural_expr_free(domain->plural_expr);
+
 	if (domain->mmaped)
 	{
 #if defined(_WIN32)
@@ -103,20 +108,26 @@ static void _domain_free(libgtr_domain_t *domain)
 
 /* Parse the plural specification out of a message catalog header. */
 static int _domain_parse_plurals(const char *str,
-	uint32_t *plural_count, libgtr_plural_eval_t **plural_eval)
+	uint32_t *plural_count, libgtr_plural_expr_t **plural_expr)
 {
 #define NPLURALS "nplurals="
+#define PLURALS "plural="
 	const char *nplural_str = strstr(str, NPLURALS);
-	if (nplural_str != NULL)
+	const char *plurals_str = strstr(str, PLURALS);
+	if (nplural_str != NULL && plurals_str != NULL)
 	{
-		*plural_count = strtoul(nplural_str + sizeof(NPLURALS) - 1, NULL, 10);
-		if (*plural_count == 0)
-			*plural_count = 2;
+		*plural_count = strtoul(nplural_str + sizeof(NPLURALS) - 1,
+			NULL, 10);
+		*plural_expr = _plural_expr_parse(
+			plurals_str + sizeof(PLURALS) - 1);
 	}
-
-	/* TODO: Implement parsing of the evaluator */
-	*plural_eval = NULL;
+	if (*plural_count == 0 || *plural_expr == NULL)
+	{
+		*plural_count = 2;
+		*plural_expr = NULL;
+	}
 	return GTREOK;
+#undef PLURALS
 #undef NPLURALS
 }
 
@@ -306,9 +317,8 @@ static int _domain_parse_data(libgtr_domain_t *domain)
 				*/
 				return GTREINVAL;
 			}
-			libgtr_plural_eval_t *plural_eval;
 			if (_domain_parse_plurals(msgstr_data,
-				&domain->plurals, &plural_eval) < 0)
+				&domain->plurals, &domain->plural_expr) < 0)
 			{
 				return GTREINVAL;
 			}
@@ -560,12 +570,6 @@ libgtr_domain_t *_gtr_get_domain(libgtr_t *gtr, const char *domain)
 	return dom;
 }
 
-static uint32_t _gtr_plurals_eval(libgtr_plural_eval_t *eval, int n)
-{
-	/* TODO: Implement this */
-	return 0;
-}
-
 const char *libgtr_get_translation(libgtr_t *gtr, const char *domain,
 	const char *msgid, int n)
 {
@@ -587,7 +591,7 @@ const char *libgtr_get_translation(libgtr_t *gtr, const char *domain,
 	assert(strcmp(str->msgid, msgid) == 0);
 
 	/* Run the plural form evaluator. */
-	uint32_t plural_form = _gtr_plurals_eval(NULL, n);
+	uint32_t plural_form = _plural_expr_eval(dom->plural_expr, n);
 	/* If the evaluation resulted in an index that's out of bounds, 
 	bail. */
 	if (plural_form >= dom->plurals)

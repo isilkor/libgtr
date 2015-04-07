@@ -23,7 +23,49 @@
 #include <stdint.h>
 #include <stdbool.h>
 
-typedef struct libgtr_plural_eval libgtr_plural_eval_t;
+typedef enum
+{
+	GPEO_INT,	/* integer constant */
+	GPEO_VAR,	/* variable ref (i.e. n) */
+
+	GPEO_ADD,	/* addition (+) */
+	GPEO_SUB,	/* subtraction (-) */
+	GPEO_MUL,	/* multiplication (*) */
+	GPEO_DIV,	/* division (/) */
+	GPEO_MOD,	/* modulus (%) */
+
+	GPEO_EQ,	/* equal (==) */
+	GPEO_NEQ,	/* not equal (!=) */
+	GPEO_LT,	/* less than (<) */
+	GPEO_LTE,	/* less than/equal (<=) */
+	GPEO_GT,	/* greater than (>) */
+	GPEO_GTE,	/* greater than/equal (>=) */
+
+	GPEO_AND,	/* logical and (&&) */
+	GPEO_OR,	/* logical or (||) */
+	GPEO_NOT,	/* logical not (!) */
+
+	GPEO_TERN	/* ternary operator (?:) */
+} libgtr_plural_eval_operation;
+typedef struct libgtr_plural_expr
+{
+	libgtr_plural_eval_operation op;
+	union
+	{
+		/* constant integer value for GPEO_INT */
+		int val;
+		/* argument vector for other operations */
+		struct libgtr_plural_expr *args[3];
+	};
+} libgtr_plural_expr_t;
+struct _gtr_plural_parser
+{
+	const char *cursor;
+	libgtr_plural_expr_t *result;
+};
+
+int libgtr_plural_expr_eval(libgtr_plural_expr_t *expr, int n);
+void libgtr_plural_expr_free(libgtr_plural_expr_t *expr);
 
 typedef struct libgtr_string_descriptor
 {
@@ -39,6 +81,8 @@ typedef struct libgtr_domain
 
 	/* parsed data */
 	unsigned int plurals;
+	libgtr_plural_expr_t *plural_expr;
+
 	libgtr_string_descriptor_t *strings;
 	void *string_descriptor_block;
 
