@@ -1,0 +1,12 @@
+# libgtr test data, header first, no translated plurals
+
+msgid	""
+msgstr	""
+"Content-Type: text/plain; charset=UTF-8\n"
+"Project-Id-Version: libgtr test data, header first\n"
+
+msgid	"test 1"
+msgstr	"test 1 translation"
+
+msgid	"test 2"
+msgstr	"test 2 translation"

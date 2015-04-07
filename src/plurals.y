@@ -105,7 +105,7 @@ static libgtr_plural_expr_t *expr3(libgtr_plural_eval_operation op,
 	libgtr_plural_expr_t *arg2)
 {
 	libgtr_plural_expr_t *args[3] = { arg0, arg1, arg2 };
-	return expr(op, 3, &arg0);
+	return expr(op, 3, args);
 }
 %}
 

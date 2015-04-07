@@ -1,0 +1,7 @@
+# libgtr test data, basic - no header, no translated plurals
+
+msgid	"test 1"
+msgstr	"test 1 translation"
+
+msgid	"test 2"
+msgstr	"test 2 translation"
